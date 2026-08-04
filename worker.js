@@ -1,8 +1,12 @@
-const allowedOrigins = new Set(['https://sunghonim.github.io', 'http://localhost:5173']);
+const allowedOrigins = new Set([
+  'https://dljkfahuweir.github.io',
+  'https://sunghonim.github.io',
+  'http://localhost:5173',
+]);
 
 function cors(origin) {
   return {
-    'Access-Control-Allow-Origin': allowedOrigins.has(origin) ? origin : 'https://sunghonim.github.io',
+    'Access-Control-Allow-Origin': allowedOrigins.has(origin) ? origin : 'https://dljkfahuweir.github.io',
     'Access-Control-Allow-Methods': 'GET, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type',
     Vary: 'Origin',
