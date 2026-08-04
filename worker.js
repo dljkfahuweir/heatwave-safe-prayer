@@ -22,7 +22,7 @@ export default {
     const start = url.searchParams.get('start');
     const end = url.searchParams.get('end');
     if (!start || !end || !/^-?\d+(\.\d+)?,-?\d+(\.\d+)?$/.test(start) || !/^-?\d+(\.\d+)?,-?\d+(\.\d+)?$/.test(end)) return new Response('Invalid coordinates', { status: 400, headers: cors(origin) });
-    const upstream = await fetch(`https://api.heigit.org/v2/directions/foot-walking/geojson?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}`, { headers: { Authorization: env.ORS_API_KEY, Accept: 'application/geo+json' } });
+    const upstream = await fetch(`https://api.openrouteservice.org/v2/directions/foot-walking?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}`, { headers: { Authorization: env.ORS_API_KEY, Accept: 'application/geo+json' } });
     return new Response(upstream.body, { status: upstream.status, headers: { ...cors(origin), 'Content-Type': upstream.headers.get('Content-Type') || 'application/json', 'Cache-Control': 'public, max-age=600' } });
   },
 };
