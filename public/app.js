@@ -60,31 +60,28 @@ function paintShadows() {
 async function loadBuildings() {
   if (!route.length) return;
   // Route points are sampled so the building request stays fast even for long walks.
-  const samples = route.filter((_, index) => index % Math.max(1, Math.ceil(route.length / 12)) === 0);
-  const around = samples.map((p) => `way[building](around:65,${p.lat},${p.lng});`).join('');
+  const samples = route.filter((_, index) => index % Math.max(1, Math.ceil(route.length / 8)) === 0);
+  const around = samples.map((p) => `way[building](around:50,${p.lat},${p.lng});`).join('');
   const query = `[out:json][timeout:10];(${around});out tags geom;`;
   note.textContent = '경로 주변 건물과 예상 그림자를 분석하고 있어요…';
   try {
     const endpoints = [
       'https://overpass-api.de/api/interpreter',
       'https://overpass.kumi.systems/api/interpreter',
+      'https://overpass.private.coffee/api/interpreter',
     ];
-    let data;
-    for (const endpoint of endpoints) {
+    const requestBuildings = async (endpoint) => {
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 10000);
+      const timeout = setTimeout(() => controller.abort(), 15000);
       try {
         const response = await fetch(`${endpoint}?data=${encodeURIComponent(query)}`, { signal: controller.signal });
-        if (!response.ok) continue;
-        data = await response.json();
-        break;
-      } catch {
-        // Try the next public Overpass endpoint when one is unavailable.
+        if (!response.ok) throw new Error(`Overpass request failed: ${response.status}`);
+        return await response.json();
       } finally {
         clearTimeout(timeout);
       }
-    }
-    if (!data) throw new Error('building data unavailable');
+    };
+    const data = await Promise.any(endpoints.map(requestBuildings));
     buildings = data.elements.filter((item) => item.geometry?.length > 2).slice(0, 160).map((item) => ({
       height: Number.parseFloat(item.tags?.height) || Number.parseFloat(item.tags?.['building:levels']) * 3.2 || 11,
       points: item.geometry.map((p) => ({ lat: p.lat, lng: p.lon })),
