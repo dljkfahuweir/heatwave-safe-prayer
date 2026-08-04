@@ -65,10 +65,26 @@ async function loadBuildings() {
   const query = `[out:json][timeout:10];(${around});out tags geom;`;
   note.textContent = '경로 주변 건물과 예상 그림자를 분석하고 있어요…';
   try {
-    const controller = new AbortController(); setTimeout(() => controller.abort(), 7000);
-    const response = await fetch(`https://overpass.kumi.systems/api/interpreter?data=${encodeURIComponent(query)}`, { signal: controller.signal });
-    if (!response.ok) throw new Error('building data unavailable');
-    const data = await response.json();
+    const endpoints = [
+      'https://overpass-api.de/api/interpreter',
+      'https://overpass.kumi.systems/api/interpreter',
+    ];
+    let data;
+    for (const endpoint of endpoints) {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 10000);
+      try {
+        const response = await fetch(`${endpoint}?data=${encodeURIComponent(query)}`, { signal: controller.signal });
+        if (!response.ok) continue;
+        data = await response.json();
+        break;
+      } catch {
+        // Try the next public Overpass endpoint when one is unavailable.
+      } finally {
+        clearTimeout(timeout);
+      }
+    }
+    if (!data) throw new Error('building data unavailable');
     buildings = data.elements.filter((item) => item.geometry?.length > 2).slice(0, 160).map((item) => ({
       height: Number.parseFloat(item.tags?.height) || Number.parseFloat(item.tags?.['building:levels']) * 3.2 || 11,
       points: item.geometry.map((p) => ({ lat: p.lat, lng: p.lon })),
