@@ -15,3 +15,4 @@
 .destination-form button{min-width:0;padding:0 14px;background:var(--navy)!important;box-shadow:none}.destination-form button:hover{transform:none;box-shadow:none}#start-form button::before,#search-form button::before{content:none}
 .control-sheet.is-stowed{z-index:12}
 .login-modal{display:none!important}
+.destination-form{align-items:center}.destination-form button{flex:0 0 auto;height:42px;min-width:0;padding:0 12px;border-radius:10px 10px 10px 4px;font-size:.76rem;letter-spacing:-.04em;white-space:nowrap;box-shadow:0 3px 0 rgba(7,31,45,.18)!important}.destination-form input{height:42px;padding:10px 12px}.destination-form button:active{transform:translateY(2px);box-shadow:0 1px 0 rgba(7,31,45,.18)!important}#start-form button{min-width:65px}#search-form button{min-width:88px}
