@@ -166,7 +166,7 @@ document.querySelector('#start-form').addEventListener('submit', (event) => { ev
 document.querySelector('#search-form').addEventListener('submit', (event) => { event.preventDefault(); search(document.querySelector('#destination').value.trim(), 'destination'); });
 document.querySelector('#location-button').style.display = 'none';
 document.querySelector('#time-button').onclick = () => { updateSunStatus(); paintShadows(); };
-let sheetDragStart = null;
+let sheetDragStart = null, ignoreSheetClick = false;
 sheetHandle.addEventListener('pointerdown', (event) => {
   sheetDragStart = event.clientY;
   sheetHandle.setPointerCapture(event.pointerId);
@@ -174,11 +174,14 @@ sheetHandle.addEventListener('pointerdown', (event) => {
 sheetHandle.addEventListener('pointerup', (event) => {
   if (sheetDragStart === null) return;
   const distance = event.clientY - sheetDragStart;
-  if (Math.abs(distance) < 8) controlSheet.classList.toggle('is-stowed');
-  else if (distance > 36) controlSheet.classList.add('is-stowed');
-  else if (distance < -36) controlSheet.classList.remove('is-stowed');
+  if (distance > 36) { controlSheet.classList.add('is-stowed'); ignoreSheetClick = true; }
+  else if (distance < -36) { controlSheet.classList.remove('is-stowed'); ignoreSheetClick = true; }
   sheetDragStart = null;
 });
 sheetHandle.addEventListener('pointercancel', () => { sheetDragStart = null; });
+sheetHandle.addEventListener('click', () => {
+  if (ignoreSheetClick) { ignoreSheetClick = false; return; }
+  controlSheet.classList.toggle('is-stowed');
+});
 map.addControl(new kakao.maps.ZoomControl(), kakao.maps.ControlPosition.RIGHT);
 updateSunStatus(); setInterval(updateSunStatus, 60000); setInterval(() => { updateSunStatus(); paintShadows(); }, 600000);

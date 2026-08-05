@@ -3,4 +3,4 @@
 
 .legend-cooling{width:14px!important;height:14px!important;display:grid!important;place-items:center;color:#fff;background:#e74747;font-size:9px;font-style:normal;line-height:1}
 
-.control-sheet{transition:transform .24s ease}.control-sheet.is-stowed{transform:translateY(calc(100% - 27px))}.sheet-handle{cursor:grab;touch-action:none}.sheet-handle:active{cursor:grabbing}
+.control-sheet{transition:transform .24s ease}.control-sheet.is-stowed{transform:translateY(calc(100% - 27px))}.sheet-handle{width:64px;height:18px;margin:-7px auto 5px;padding:7px 15px;background-clip:content-box;cursor:grab;touch-action:none}.sheet-handle:active{cursor:grabbing}
