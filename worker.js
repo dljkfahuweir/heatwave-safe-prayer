@@ -6,7 +6,7 @@ const allowedOrigins = new Set([
 
 function cors(origin) {
   return {
-    'Access-Control-Allow-Origin': allowedOrigins.has(origin) ? origin : 'https://dljkfahuweir.github.io',
+    'Access-Control-Allow-Origin': origin === 'null' || allowedOrigins.has(origin) ? origin : 'https://dljkfahuweir.github.io',
     'Access-Control-Allow-Methods': 'GET, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type',
     Vary: 'Origin',
