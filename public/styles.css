@@ -16,3 +16,4 @@
 .control-sheet.is-stowed{z-index:12}
 .login-modal{display:none!important}
 .destination-form{align-items:center}.destination-form button{flex:0 0 auto;height:42px;min-width:0;padding:0 12px;border-radius:10px 10px 10px 4px;font-size:.76rem;letter-spacing:-.04em;white-space:nowrap;box-shadow:0 3px 0 rgba(7,31,45,.18)!important}.destination-form input{height:42px;padding:10px 12px}.destination-form button:active{transform:translateY(2px);box-shadow:0 1px 0 rgba(7,31,45,.18)!important}#start-form button{min-width:65px}#search-form button{min-width:88px}
+.destination-form button{min-width:0!important;padding:0 7px;border-radius:9px;box-shadow:none!important;letter-spacing:-.06em}.destination-form button:active{transform:none;box-shadow:none!important}#start-form button,#search-form button{min-width:0}
