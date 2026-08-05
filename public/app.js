@@ -9,7 +9,11 @@ const resultBox = document.querySelector('#search-results');
 const candidateBox = document.querySelector('#route-candidates');
 const controlSheet = document.querySelector('.control-sheet');
 const sheetHandle = document.querySelector('.sheet-handle');
-let start, destination, startMarker, destinationMarker, routeLine;
+const appShell = document.querySelector('.app');
+const savedRouteBox = document.querySelector('#saved-routes');
+const reportForm = document.querySelector('#shade-report-form');
+const reportStatus = document.querySelector('#report-status');
+let start, destination, startMarker, destinationMarker, routeLine, startLabel = '', destinationLabel = '';
 let route = [], buildings = [], shadows = [], facilityMarkers = [], candidates = [], selectedCandidate = 0, activeFacilityInfo = null;
 
 const rad = (n) => n * Math.PI / 180;
@@ -88,6 +92,7 @@ function selectCandidate(index) {
   routeLine.setMap(map);
   const bounds = new kakao.maps.LatLngBounds(); route.forEach((p) => bounds.extend(toLatLng(p))); map.setBounds(bounds);
   renderCandidates();
+  updateSaveRouteButton();
   loadBuildings();
   loadFacilities();
 }
@@ -154,11 +159,47 @@ async function getWalkingRoute() {
   } catch { note.textContent = '보행 경로를 찾지 못했어요. 장소를 다시 선택해 주세요.'; }
 }
 
+const storageKey = 'sunSafeSavedRoutes';
+const savedRoutes = () => JSON.parse(localStorage.getItem(storageKey) || '[]');
+const setSavedRoutes = (items) => localStorage.setItem(storageKey, JSON.stringify(items));
+const saveRouteButton = Object.assign(document.createElement('button'), { id: 'save-route', type: 'button', textContent: '★ 이 경로 저장' });
+saveRouteButton.className = 'save-route-button';
+document.querySelector('.route-card').after(saveRouteButton);
+
+function updateSaveRouteButton() { saveRouteButton.disabled = !route.length || !start || !destination; }
+function renderSavedRoutes() {
+  const items = savedRoutes();
+  savedRouteBox.innerHTML = '';
+  if (!items.length) { savedRouteBox.innerHTML = '<div class="empty-state">아직 저장한 경로가 없어요.<br>홈 화면에서 경로를 찾은 뒤 저장해 보세요.</div>'; return; }
+  items.forEach((item) => {
+    const card = document.createElement('article'); card.className = 'saved-route';
+    card.innerHTML = `<strong>${escapeHtml(item.startLabel)} → ${escapeHtml(item.destinationLabel)}</strong><small>${item.minutes}분 · 저장일 ${item.savedAt}</small><div class="saved-route-actions"><button type="button">길찾기</button><button type="button" class="delete-route">삭제</button></div>`;
+    const [useButton, deleteButton] = card.querySelectorAll('button');
+    useButton.onclick = () => { start = item.start; destination = item.destination; startLabel = item.startLabel; destinationLabel = item.destinationLabel; switchPage('home'); getWalkingRoute(); };
+    deleteButton.onclick = () => { setSavedRoutes(savedRoutes().filter((routeItem) => routeItem.id !== item.id)); renderSavedRoutes(); };
+    savedRouteBox.append(card);
+  });
+}
+function saveCurrentRoute() {
+  if (!route.length || !start || !destination) return;
+  const item = { id: String(Date.now()), start, destination, startLabel: startLabel || '출발지', destinationLabel: destinationLabel || '도착지', minutes: Math.max(1, Math.round(routeLength(route) / 78)), savedAt: new Date().toLocaleDateString('ko-KR') };
+  const items = savedRoutes();
+  if (!items.some((saved) => saved.startLabel === item.startLabel && saved.destinationLabel === item.destinationLabel)) setSavedRoutes([item, ...items].slice(0, 20));
+  saveRouteButton.textContent = '저장 완료 ✓'; setTimeout(() => { saveRouteButton.textContent = '★ 이 경로 저장'; }, 1400);
+}
+function switchPage(page) {
+  appShell.classList.remove('page-home', 'page-saved', 'page-report'); appShell.classList.add(`page-${page}`);
+  document.querySelectorAll('.page-nav button').forEach((button) => button.classList.toggle('active', button.dataset.page === page));
+  if (page === 'saved') renderSavedRoutes();
+  if (page === 'report') document.querySelector('#report-location').value = destinationLabel || '';
+  if (page === 'home') setTimeout(() => map.relayout(), 250);
+}
+
 function selectPlace(place, kind) {
   const point = { lat: Number(place.y), lng: Number(place.x) };
   const options = { position: toLatLng(point), map, title: place.place_name };
-  if (kind === 'start') { startMarker?.setMap(null); startMarker = new kakao.maps.Marker(options); start = point; }
-  else { destinationMarker?.setMap(null); destinationMarker = new kakao.maps.Marker(options); destination = point; }
+  if (kind === 'start') { startMarker?.setMap(null); startMarker = new kakao.maps.Marker(options); start = point; startLabel = place.place_name; }
+  else { destinationMarker?.setMap(null); destinationMarker = new kakao.maps.Marker(options); destination = point; destinationLabel = place.place_name; }
   map.panTo(options.position); resultBox.innerHTML = ''; if (start && destination) getWalkingRoute(); else note.textContent = '이제 다른 장소도 검색해 선택해 주세요.';
 }
 function showResults(data, kind) { resultBox.innerHTML = ''; if (!data.length) { resultBox.innerHTML = '<li>장소를 찾지 못했어요.</li>'; return; } data.slice(0, 5).forEach((place) => { const li = document.createElement('li'); const button = document.createElement('button'); button.innerHTML = `${place.place_name}<small>${place.road_address_name || place.address_name}</small>`; button.onclick = () => selectPlace(place, kind); li.append(button); resultBox.append(li); }); }
@@ -168,6 +209,15 @@ document.querySelector('#start-form').addEventListener('submit', (event) => { ev
 document.querySelector('#search-form').addEventListener('submit', (event) => { event.preventDefault(); search(document.querySelector('#destination').value.trim(), 'destination'); });
 document.querySelector('#location-button').style.display = 'none';
 document.querySelector('#time-button').onclick = () => { updateSunStatus(); paintShadows(); };
+saveRouteButton.onclick = saveCurrentRoute;
+document.querySelectorAll('.page-nav button').forEach((button) => button.addEventListener('click', () => switchPage(button.dataset.page)));
+reportForm.addEventListener('submit', (event) => {
+  event.preventDefault();
+  const reports = JSON.parse(localStorage.getItem('sunSafeShadeReports') || '[]');
+  reports.unshift({ location: document.querySelector('#report-location').value.trim(), type: document.querySelector('#report-type').value, detail: document.querySelector('#report-detail').value.trim(), reportedAt: new Date().toLocaleString('ko-KR') });
+  localStorage.setItem('sunSafeShadeReports', JSON.stringify(reports.slice(0, 30)));
+  reportForm.reset(); reportStatus.textContent = '신고가 이 기기에 저장됐어요. 다음 데이터 업데이트에 참고할 수 있습니다.';
+});
 let sheetDragStart = null, ignoreSheetClick = false;
 sheetHandle.addEventListener('pointerdown', (event) => {
   sheetDragStart = event.clientY;
@@ -186,4 +236,5 @@ sheetHandle.addEventListener('click', () => {
   controlSheet.classList.toggle('is-stowed');
 });
 map.addControl(new kakao.maps.ZoomControl(), kakao.maps.ControlPosition.RIGHT);
+switchPage('home'); updateSaveRouteButton();
 updateSunStatus(); setInterval(updateSunStatus, 60000); setInterval(() => { updateSunStatus(); paintShadows(); }, 600000);

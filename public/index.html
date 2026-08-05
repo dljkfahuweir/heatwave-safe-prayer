@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#10293a" /><meta name="description" content="광안2동 실시간 그늘 지도" />
-  <title>태양을 피하고 싶어서… | 광안2동 그늘 지도</title><link rel="stylesheet" href="./styles.css?v=20260805-1010" />
+  <title>태양을 피하고 싶어서… | 광안2동 그늘 지도</title><link rel="stylesheet" href="./styles.css?v=20260805-1020" />
 </head>
 <body>
   <main class="app">
@@ -16,6 +16,21 @@
       <div class="route-card"><div class="route-icon">◒</div><div class="route-copy"><strong id="shade-title">내 주변 그늘 계산 중</strong><p id="shade-description">건물 높이와 태양 고도를 이용해 보행로 주변의 예상 그늘을 표시합니다.</p></div><span id="shade-badge" class="shade-badge">--</span></div>
       <div class="legend"><span><i class="legend-user"></i>내 위치</span><span><i class="legend-shadow"></i>건물 예상 그림자</span><span><i class="legend-route"></i>선택한 목적지</span><span><i class="legend-cooling">❄</i>더위 대피 장소</span></div><p class="accuracy-note">건물 높이·태양 위치 기반의 예상값입니다. 가로수, 차양, 구름은 아직 반영하지 않습니다.</p>
     </section>
+    <section id="saved-page" class="secondary-page" aria-label="저장한 경로">
+      <p class="page-eyebrow">MY ROUTES</p><h2>자주 가는 경로</h2><p class="page-intro">홈에서 찾은 경로를 저장해 두면 여기서 바로 다시 길찾기 할 수 있어요.</p>
+      <div id="saved-routes" class="saved-list"></div>
+    </section>
+    <section id="report-page" class="secondary-page" aria-label="그늘 신고">
+      <p class="page-eyebrow">SHADE REPORT</p><h2>실제 그늘과 달랐나요?</h2><p class="page-intro">햇빛이 강했던 위치와 상황을 알려주세요. 신고 내용은 현재 이 기기에 저장됩니다.</p>
+      <form id="shade-report-form" class="report-form">
+        <label>위치 또는 구간<input id="report-location" required maxlength="80" placeholder="예: 광안리해수욕장 입구 앞" /></label>
+        <label>신고 내용<select id="report-type"><option>그늘로 표시됐지만 햇빛이 강함</option><option>그늘 표시가 부족함</option><option>그늘 정보가 오래됨</option></select></label>
+        <label>상세 설명 (선택)<textarea id="report-detail" maxlength="240" placeholder="시간대, 주변 건물 등을 적어주세요."></textarea></label>
+        <button type="submit" class="primary-wide">그늘 신고 저장</button>
+      </form>
+      <div id="report-status" class="report-status" aria-live="polite"></div>
+    </section>
+    <nav class="page-nav" aria-label="주요 메뉴"><button type="button" data-page="home" class="active">⌖<span>지도</span></button><button type="button" data-page="saved">★<span>저장 경로</span></button><button type="button" data-page="report">⚑<span>그늘 신고</span></button></nav>
   </main>
-  <script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=8082f8d19a45ee1cc9ec6908f1ea2f53&libraries=services"></script><script src="./app.js?v=20260805-1010"></script>
+  <script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=8082f8d19a45ee1cc9ec6908f1ea2f53&libraries=services"></script><script src="./app.js?v=20260805-1020"></script>
 </body></html>
