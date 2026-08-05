@@ -1,3 +1,5 @@
+if (location.protocol === 'file:') location.replace('https://dljkfahuweir.github.io/heatwave-safe-prayer/');
+
 const ROUTE_API = 'https://shade-route-api.soobin090630.workers.dev';
 const DEFAULT = { lat: 35.1532, lng: 129.1186 };
 const map = new kakao.maps.Map(document.querySelector('#map'), { center: new kakao.maps.LatLng(DEFAULT.lat, DEFAULT.lng), level: 5 });
