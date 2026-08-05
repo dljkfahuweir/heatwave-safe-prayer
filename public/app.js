@@ -17,6 +17,7 @@ const reportType = document.querySelector('#report-type');
 const customReportInput = document.querySelector('#report-custom-type');
 let start, destination, startMarker, destinationMarker, routeLine, startLabel = '', destinationLabel = '';
 let route = [], buildings = [], shadows = [], facilityMarkers = [], candidates = [], selectedCandidate = 0, activeFacilityInfo = null;
+let currentTemperature = null;
 
 const rad = (n) => n * Math.PI / 180;
 const toLatLng = (p) => new kakao.maps.LatLng(p.lat, p.lng);
@@ -42,8 +43,20 @@ function solarPosition(date = new Date()) {
 function updateSunStatus() {
   const sun = solarPosition();
   const degrees = (sun.actualAltitude / Math.PI * 180).toFixed(1);
-  document.querySelector('#sun-time').textContent = sun.actualAltitude > 0 ? `현재 태양 고도 ${degrees}°` : `현재 일몰 후 (${degrees}°)`;
-  document.querySelector('#sun-detail').textContent = `실시간 갱신 · ${new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}`;
+  const temperatureText = currentTemperature === null ? '기온 확인 중' : `광안2동 ${currentTemperature.toFixed(1)}°C`;
+  document.querySelector('#sun-time').textContent = sun.actualAltitude > 0 ? `태양 고도 ${degrees}° · ${temperatureText}` : `일몰 후 (${degrees}°) · ${temperatureText}`;
+  document.querySelector('#sun-detail').textContent = `기온·태양 정보 갱신 · ${new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}`;
+}
+
+async function updateTemperature() {
+  try {
+    const response = await fetch('https://api.open-meteo.com/v1/forecast?latitude=35.1532&longitude=129.1186&current=temperature_2m&timezone=Asia%2FSeoul');
+    if (!response.ok) throw new Error('weather unavailable');
+    const data = await response.json();
+    currentTemperature = Number(data.current?.temperature_2m);
+    if (!Number.isFinite(currentTemperature)) currentTemperature = null;
+  } catch { currentTemperature = null; }
+  updateSunStatus();
 }
 
 function clearShadows() { shadows.forEach((shape) => shape.setMap(null)); shadows = []; }
@@ -263,4 +276,4 @@ sheetHandle.addEventListener('click', () => {
 });
 map.addControl(new kakao.maps.ZoomControl(), kakao.maps.ControlPosition.RIGHT);
 updateCustomReportField(); switchPage('home'); updateSaveRouteButton();
-updateSunStatus(); setInterval(updateSunStatus, 60000); setInterval(() => { updateSunStatus(); paintShadows(); }, 600000);
+updateTemperature(); setInterval(updateSunStatus, 60000); setInterval(updateTemperature, 600000); setInterval(() => { updateSunStatus(); paintShadows(); }, 600000);
