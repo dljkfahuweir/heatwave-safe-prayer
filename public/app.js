@@ -13,6 +13,8 @@ const appShell = document.querySelector('.app');
 const savedRouteBox = document.querySelector('#saved-routes');
 const reportForm = document.querySelector('#shade-report-form');
 const reportStatus = document.querySelector('#report-status');
+const reportType = document.querySelector('#report-type');
+const customReportField = document.querySelector('#custom-report-field');
 const loginButton = document.querySelector('#language-button');
 let activeUser = localStorage.getItem('sunSafeUser') || '';
 let start, destination, startMarker, destinationMarker, routeLine, startLabel = '', destinationLabel = '';
@@ -20,6 +22,9 @@ let route = [], buildings = [], shadows = [], facilityMarkers = [], candidates =
 
 const rad = (n) => n * Math.PI / 180;
 const toLatLng = (p) => new kakao.maps.LatLng(p.lat, p.lng);
+const labeledPin = (color, label) => 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="48" height="52" viewBox="0 0 48 52"><rect x="2" y="1" width="44" height="17" rx="8.5" fill="${color}"/><text x="24" y="13" text-anchor="middle" fill="white" font-size="10" font-family="Arial,sans-serif" font-weight="700">${label}</text><path fill="${color}" stroke="white" stroke-width="1.5" d="M24 18.5a10.5 10.5 0 0 0-10.5 10.5C13.5 36.8 24 50 24 50s10.5-13.2 10.5-21A10.5 10.5 0 0 0 24 18.5z"/><circle cx="24" cy="29" r="3.3" fill="white"/></svg>`);
+const startPinImage = new kakao.maps.MarkerImage(labeledPin('#1676d2', '출발'), new kakao.maps.Size(48, 52), { offset: new kakao.maps.Point(24, 52) });
+const destinationPinImage = new kakao.maps.MarkerImage(labeledPin('#e74747', '목적'), new kakao.maps.Size(48, 52), { offset: new kakao.maps.Point(24, 52) });
 const meters = (a, b) => Math.hypot((a.lat - b.lat) * 111320, (a.lng - b.lng) * 111320 * Math.cos(rad((a.lat + b.lat) / 2)));
 const routeLength = (points) => points.slice(1).reduce((sum, p, i) => sum + meters(points[i], p), 0);
 const move = (p, east, north) => ({ lat: p.lat + north / 111320, lng: p.lng + east / (111320 * Math.cos(rad(p.lat))) });
@@ -53,7 +58,8 @@ function reportMissingShade(point) {
   const location = `지도에서 선택한 예상 그늘 (${point.lat.toFixed(5)}, ${point.lng.toFixed(5)})`;
   switchPage('report');
   document.querySelector('#report-location').value = location;
-  document.querySelector('#report-type').value = '그늘로 표시됐지만 햇빛이 강함';
+  reportType.value = '그늘로 표시됐지만 햇빛이 강함';
+  updateCustomReportField();
   document.querySelector('#report-detail').focus();
 }
 
@@ -210,8 +216,8 @@ function switchPage(page) {
 function selectPlace(place, kind) {
   const point = { lat: Number(place.y), lng: Number(place.x) };
   const options = { position: toLatLng(point), map, title: place.place_name };
-  if (kind === 'start') { startMarker?.setMap(null); startMarker = new kakao.maps.Marker(options); start = point; startLabel = place.place_name; }
-  else { destinationMarker?.setMap(null); destinationMarker = new kakao.maps.Marker(options); destination = point; destinationLabel = place.place_name; }
+  if (kind === 'start') { startMarker?.setMap(null); startMarker = new kakao.maps.Marker({ ...options, image: startPinImage }); start = point; startLabel = place.place_name; }
+  else { destinationMarker?.setMap(null); destinationMarker = new kakao.maps.Marker({ ...options, image: destinationPinImage }); destination = point; destinationLabel = place.place_name; }
   map.panTo(options.position); resultBox.innerHTML = ''; if (start && destination) getWalkingRoute(); else note.textContent = '이제 다른 장소도 검색해 선택해 주세요.';
 }
 function showResults(data, kind) { resultBox.innerHTML = ''; if (!data.length) { resultBox.innerHTML = '<li>장소를 찾지 못했어요.</li>'; return; } data.slice(0, 5).forEach((place) => { const li = document.createElement('li'); const button = document.createElement('button'); button.innerHTML = `${place.place_name}<small>${place.road_address_name || place.address_name}</small>`; button.onclick = () => selectPlace(place, kind); li.append(button); resultBox.append(li); }); }
@@ -237,12 +243,18 @@ loginModal.querySelector('#login-submit').onclick = () => {
 loginModal.querySelector('#logout-button').onclick = () => { activeUser = ''; localStorage.removeItem('sunSafeUser'); updateLoginButton(); renderSavedRoutes(); closeLogin(); };
 saveRouteButton.onclick = saveCurrentRoute;
 document.querySelectorAll('.page-nav button').forEach((button) => button.addEventListener('click', () => switchPage(button.dataset.page)));
+function updateCustomReportField() {
+  const isCustom = reportType.value === '직접 입력';
+  customReportField.hidden = !isCustom;
+  document.querySelector('#report-detail').required = isCustom;
+}
+reportType.addEventListener('change', updateCustomReportField);
 reportForm.addEventListener('submit', (event) => {
   event.preventDefault();
   const reports = JSON.parse(localStorage.getItem(reportStorageKey()) || '[]');
   reports.unshift({ location: document.querySelector('#report-location').value.trim(), type: document.querySelector('#report-type').value, detail: document.querySelector('#report-detail').value.trim(), reportedAt: new Date().toLocaleString('ko-KR') });
   localStorage.setItem(reportStorageKey(), JSON.stringify(reports.slice(0, 30)));
-  reportForm.reset(); reportStatus.textContent = '신고가 이 기기에 저장됐어요. 다음 데이터 업데이트에 참고할 수 있습니다.';
+  reportForm.reset(); updateCustomReportField(); reportStatus.textContent = '신고가 이 기기에 저장됐어요. 다음 데이터 업데이트에 참고할 수 있습니다.';
 });
 let sheetDragStart = null, ignoreSheetClick = false;
 sheetHandle.addEventListener('pointerdown', (event) => {
@@ -262,5 +274,5 @@ sheetHandle.addEventListener('click', () => {
   controlSheet.classList.toggle('is-stowed');
 });
 map.addControl(new kakao.maps.ZoomControl(), kakao.maps.ControlPosition.RIGHT);
-updateLoginButton(); switchPage('home'); updateSaveRouteButton();
+updateLoginButton(); updateCustomReportField(); switchPage('home'); updateSaveRouteButton();
 updateSunStatus(); setInterval(updateSunStatus, 60000); setInterval(() => { updateSunStatus(); paintShadows(); }, 600000);
