@@ -6,7 +6,7 @@ const note = document.querySelector('#map-notice');
 const resultBox = document.querySelector('#search-results');
 const candidateBox = document.querySelector('#route-candidates');
 let start, destination, startMarker, destinationMarker, routeLine;
-let route = [], buildings = [], shadows = [], facilityMarkers = [], candidates = [], selectedCandidate = 0;
+let route = [], buildings = [], shadows = [], facilityMarkers = [], candidates = [], selectedCandidate = 0, activeFacilityInfo = null;
 
 const rad = (n) => n * Math.PI / 180;
 const toLatLng = (p) => new kakao.maps.LatLng(p.lat, p.lng);
@@ -34,7 +34,10 @@ function updateSunStatus() {
 }
 
 function clearShadows() { shadows.forEach((shape) => shape.setMap(null)); shadows = []; }
-function clearFacilities() { facilityMarkers.forEach((marker) => marker.setMap(null)); facilityMarkers = []; }
+function clearFacilities() {
+  facilityMarkers.forEach(({ marker, info }) => { marker.setMap(null); info.close(); });
+  facilityMarkers = []; activeFacilityInfo = null;
+}
 
 function paintShadows() {
   clearShadows();
@@ -103,11 +106,22 @@ async function loadBuildings() {
   }
 }
 
+const coolingPin = 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="20" height="25" viewBox="0 0 20 25"><path fill="#e74747" stroke="#fff" stroke-width="1.5" d="M10 1.2a7.4 7.4 0 0 0-7.4 7.4C2.6 14.2 10 23.8 10 23.8s7.4-9.6 7.4-15.2A7.4 7.4 0 0 0 10 1.2z"/><circle cx="10" cy="8.6" r="2.5" fill="#fff"/></svg>');
+const coolingPinImage = new kakao.maps.MarkerImage(coolingPin, new kakao.maps.Size(20, 25), { offset: new kakao.maps.Point(10, 25) });
+const escapeHtml = (value = '') => String(value).replace(/[&<>'"]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' })[char]);
+
 function facilityMarker(place) {
-  const marker = new kakao.maps.Marker({ position: new kakao.maps.LatLng(Number(place.y), Number(place.x)), map, title: place.place_name, image: new kakao.maps.MarkerImage('https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/marker_red.png', new kakao.maps.Size(28, 35)) });
+  const marker = new kakao.maps.Marker({ position: new kakao.maps.LatLng(Number(place.y), Number(place.x)), map, title: place.place_name, image: coolingPinImage });
   const info = new kakao.maps.InfoWindow({ content: `<div style="padding:7px;font-size:12px;max-width:180px"><b>더위 대피</b><br>${place.place_name}</div>` });
-  kakao.maps.event.addListener(marker, 'click', () => info.open(map, marker));
-  facilityMarkers.push(marker);
+  const phone = place.phone || '전화번호 정보 없음';
+  const hours = place.hours || '운영시간은 해당 시설에 확인';
+  const placeLink = place.place_url ? `<a href="${escapeHtml(place.place_url)}" target="_blank" rel="noopener" style="display:inline-block;margin-top:5px;color:#1676d2">지도에서 상세 확인</a>` : '';
+  info.setContent(`<div style="padding:9px 10px;font-size:12px;line-height:1.55;max-width:210px"><strong>${escapeHtml(place.place_name)}</strong><br>운영시간: ${escapeHtml(hours)}<br>전화번호: ${escapeHtml(phone)}${placeLink}</div>`);
+  kakao.maps.event.addListener(marker, 'click', () => {
+    if (activeFacilityInfo === info) { info.close(); activeFacilityInfo = null; return; }
+    activeFacilityInfo?.close(); info.open(map, marker); activeFacilityInfo = info;
+  });
+  facilityMarkers.push({ marker, info });
 }
 
 async function loadFacilities() {
