@@ -17,7 +17,7 @@ const reportType = document.querySelector('#report-type');
 const customReportInput = document.querySelector('#report-custom-type');
 let start, destination, startMarker, destinationMarker, routeLine, userLocationMarker, accuracyCircle, locationWatchId = null, startLabel = '', destinationLabel = '';
 let route = [], buildings = [], shadows = [], facilityMarkers = [], candidates = [], selectedCandidate = 0, activeFacilityInfo = null;
-let currentTemperature = null;
+let currentTemperature = null, currentTemperatureLabel = '현재 위치', weatherLocation = null, lastWeatherRequestAt = 0;
 
 const rad = (n) => n * Math.PI / 180;
 const toLatLng = (p) => new kakao.maps.LatLng(p.lat, p.lng);
@@ -43,18 +43,20 @@ function solarPosition(date = new Date()) {
 function updateSunStatus() {
   const sun = solarPosition();
   const degrees = (sun.actualAltitude / Math.PI * 180).toFixed(1);
-  const temperatureText = currentTemperature === null ? '기온 확인 중' : `광안동 ${currentTemperature.toFixed(1)}°C`;
+  const temperatureText = currentTemperature === null ? '위치 버튼으로 기온 확인' : `${currentTemperatureLabel} ${currentTemperature.toFixed(1)}°C`;
   document.querySelector('#sun-time').textContent = sun.actualAltitude > 0 ? `태양 고도 ${degrees}° · ${temperatureText}` : `일몰 후 (${degrees}°) · ${temperatureText}`;
   document.querySelector('#sun-detail').textContent = `기온·태양 정보 갱신 · ${new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}`;
 }
 
-async function updateTemperature() {
+async function updateTemperature(location = weatherLocation, label = currentTemperatureLabel) {
+  if (!location) { updateSunStatus(); return; }
   try {
-    const response = await fetch('https://api.open-meteo.com/v1/forecast?latitude=35.1532&longitude=129.1186&current=temperature_2m&timezone=Asia%2FSeoul');
+    const response = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${location.lat}&longitude=${location.lng}&current=temperature_2m&timezone=Asia%2FSeoul`);
     if (!response.ok) throw new Error('weather unavailable');
     const data = await response.json();
     currentTemperature = Number(data.current?.temperature_2m);
     if (!Number.isFinite(currentTemperature)) currentTemperature = null;
+    currentTemperatureLabel = label;
   } catch { currentTemperature = null; }
   updateSunStatus();
 }
@@ -73,6 +75,13 @@ function showUserLocation(position) {
     accuracyCircle = new kakao.maps.Circle({ center: point, radius: position.coords.accuracy, strokeWeight: 1, strokeColor: '#1676d2', strokeOpacity: .5, fillColor: '#1676d2', fillOpacity: .12, map });
   } else { userLocationMarker.setPosition(point); accuracyCircle.setCenter(point); accuracyCircle.setRadius(position.coords.accuracy); }
   map.panTo(point);
+  if (Date.now() - lastWeatherRequestAt < 600000) return;
+  lastWeatherRequestAt = Date.now();
+  weatherLocation = { lat: position.coords.latitude, lng: position.coords.longitude };
+  new kakao.maps.services.Geocoder().coord2RegionCode(weatherLocation.lng, weatherLocation.lat, (regions, status) => {
+    const label = status === kakao.maps.services.Status.OK ? (regions[0]?.region_3depth_name || regions[0]?.region_2depth_name || '현재 위치') : '현재 위치';
+    updateTemperature(weatherLocation, label);
+  });
 }
 
 function startLocationTracking() {
@@ -293,4 +302,4 @@ sheetHandle.addEventListener('click', () => {
 });
 map.addControl(new kakao.maps.ZoomControl(), kakao.maps.ControlPosition.RIGHT);
 updateCustomReportField(); switchPage('home'); updateSaveRouteButton();
-updateTemperature(); setInterval(updateSunStatus, 60000); setInterval(updateTemperature, 600000); setInterval(() => { updateSunStatus(); paintShadows(); }, 600000);
+updateSunStatus(); setInterval(updateSunStatus, 60000); setInterval(updateTemperature, 600000); setInterval(() => { updateSunStatus(); paintShadows(); }, 600000);
