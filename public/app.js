@@ -15,7 +15,7 @@ const reportForm = document.querySelector('#shade-report-form');
 const reportStatus = document.querySelector('#report-status');
 const reportType = document.querySelector('#report-type');
 const customReportInput = document.querySelector('#report-custom-type');
-let start, destination, startMarker, destinationMarker, routeLine, startLabel = '', destinationLabel = '';
+let start, destination, startMarker, destinationMarker, routeLine, userLocationMarker, accuracyCircle, locationWatchId = null, startLabel = '', destinationLabel = '';
 let route = [], buildings = [], shadows = [], facilityMarkers = [], candidates = [], selectedCandidate = 0, activeFacilityInfo = null;
 let currentTemperature = null;
 
@@ -63,6 +63,23 @@ function clearShadows() { shadows.forEach((shape) => shape.setMap(null)); shadow
 function clearFacilities() {
   facilityMarkers.forEach(({ marker, info }) => { marker.setMap(null); info.close(); });
   facilityMarkers = []; activeFacilityInfo = null;
+}
+
+function showUserLocation(position) {
+  const point = new kakao.maps.LatLng(position.coords.latitude, position.coords.longitude);
+  if (!userLocationMarker) {
+    const icon = 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22"><circle cx="11" cy="11" r="8" fill="#1676d2" stroke="white" stroke-width="3"/><circle cx="11" cy="11" r="2.5" fill="white"/></svg>');
+    userLocationMarker = new kakao.maps.Marker({ position: point, map, title: '현재 위치', image: new kakao.maps.MarkerImage(icon, new kakao.maps.Size(22, 22), { offset: new kakao.maps.Point(11, 11) }) });
+    accuracyCircle = new kakao.maps.Circle({ center: point, radius: position.coords.accuracy, strokeWeight: 1, strokeColor: '#1676d2', strokeOpacity: .5, fillColor: '#1676d2', fillOpacity: .12, map });
+  } else { userLocationMarker.setPosition(point); accuracyCircle.setCenter(point); accuracyCircle.setRadius(position.coords.accuracy); }
+  map.panTo(point);
+}
+
+function startLocationTracking() {
+  if (!navigator.geolocation) { note.textContent = '이 브라우저에서는 현재 위치를 사용할 수 없어요.'; return; }
+  note.textContent = '현재 위치 권한을 확인하고 있어요.';
+  if (locationWatchId !== null) navigator.geolocation.clearWatch(locationWatchId);
+  locationWatchId = navigator.geolocation.watchPosition(showUserLocation, () => { note.textContent = '현재 위치 권한이 필요해요. 브라우저에서 위치 접근을 허용해 주세요.'; }, { enableHighAccuracy: true, maximumAge: 30000, timeout: 12000 });
 }
 
 function reportMissingShade(point) {
@@ -237,7 +254,7 @@ function search(keyword, kind) { if (!keyword) return; places.keywordSearch(keyw
 
 document.querySelector('#start-form').addEventListener('submit', (event) => { event.preventDefault(); search(document.querySelector('#start').value.trim(), 'start'); });
 document.querySelector('#search-form').addEventListener('submit', (event) => { event.preventDefault(); search(document.querySelector('#destination').value.trim(), 'destination'); });
-document.querySelector('#location-button').style.display = 'none';
+document.querySelector('#location-button').onclick = startLocationTracking;
 document.querySelector('#time-button').onclick = () => { updateSunStatus(); paintShadows(); };
 saveRouteButton.onclick = saveCurrentRoute;
 document.querySelectorAll('.page-nav button').forEach((button) => button.addEventListener('click', () => switchPage(button.dataset.page)));
