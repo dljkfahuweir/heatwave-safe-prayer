@@ -43,7 +43,7 @@ function solarPosition(date = new Date()) {
 function updateSunStatus() {
   const sun = solarPosition();
   const degrees = (sun.actualAltitude / Math.PI * 180).toFixed(1);
-  const temperatureText = currentTemperature === null ? '기온 확인 중' : `광안2동 ${currentTemperature.toFixed(1)}°C`;
+  const temperatureText = currentTemperature === null ? '기온 확인 중' : `광안동 ${currentTemperature.toFixed(1)}°C`;
   document.querySelector('#sun-time').textContent = sun.actualAltitude > 0 ? `태양 고도 ${degrees}° · ${temperatureText}` : `일몰 후 (${degrees}°) · ${temperatureText}`;
   document.querySelector('#sun-detail').textContent = `기온·태양 정보 갱신 · ${new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}`;
 }
