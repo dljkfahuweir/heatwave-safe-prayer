@@ -14,7 +14,7 @@ const savedRouteBox = document.querySelector('#saved-routes');
 const reportForm = document.querySelector('#shade-report-form');
 const reportStatus = document.querySelector('#report-status');
 const reportType = document.querySelector('#report-type');
-const customReportField = document.querySelector('#custom-report-field');
+const customReportInput = document.querySelector('#report-custom-type');
 let start, destination, startMarker, destinationMarker, routeLine, startLabel = '', destinationLabel = '';
 let route = [], buildings = [], shadows = [], facilityMarkers = [], candidates = [], selectedCandidate = 0, activeFacilityInfo = null;
 
@@ -58,7 +58,7 @@ function reportMissingShade(point) {
   document.querySelector('#report-location').value = location;
   reportType.value = '그늘로 표시됐지만 햇빛이 강함';
   updateCustomReportField();
-  document.querySelector('#report-detail').focus();
+  reportType.focus();
 }
 
 function paintShadows() {
@@ -176,6 +176,7 @@ async function getWalkingRoute() {
 
 const storageKey = () => 'sunSafeSavedRoutes';
 const reportStorageKey = () => 'sunSafeShadeReports';
+if (!localStorage.getItem(storageKey()) && localStorage.getItem('sunSafeSavedRoutes:guest')) localStorage.setItem(storageKey(), localStorage.getItem('sunSafeSavedRoutes:guest'));
 const savedRoutes = () => JSON.parse(localStorage.getItem(storageKey()) || '[]');
 const setSavedRoutes = (items) => localStorage.setItem(storageKey(), JSON.stringify(items));
 const saveRouteButton = Object.assign(document.createElement('button'), { id: 'save-route', type: 'button', textContent: '★ 이 경로 저장' });
@@ -229,14 +230,17 @@ saveRouteButton.onclick = saveCurrentRoute;
 document.querySelectorAll('.page-nav button').forEach((button) => button.addEventListener('click', () => switchPage(button.dataset.page)));
 function updateCustomReportField() {
   const isCustom = reportType.value === '직접 입력';
-  customReportField.hidden = !isCustom;
-  document.querySelector('#report-detail').required = isCustom;
+  reportType.hidden = isCustom;
+  customReportInput.hidden = !isCustom;
+  customReportInput.required = isCustom;
+  if (isCustom) customReportInput.focus();
 }
 reportType.addEventListener('change', updateCustomReportField);
+customReportInput.addEventListener('blur', () => { if (!customReportInput.value.trim()) { reportType.hidden = false; customReportInput.hidden = true; reportType.value = '그늘로 표시됐지만 햇빛이 강함'; } });
 reportForm.addEventListener('submit', (event) => {
   event.preventDefault();
   const reports = JSON.parse(localStorage.getItem(reportStorageKey()) || '[]');
-  reports.unshift({ location: document.querySelector('#report-location').value.trim(), type: document.querySelector('#report-type').value, detail: document.querySelector('#report-detail').value.trim(), reportedAt: new Date().toLocaleString('ko-KR') });
+  reports.unshift({ location: document.querySelector('#report-location').value.trim(), type: reportType.hidden ? customReportInput.value.trim() : reportType.value, reportedAt: new Date().toLocaleString('ko-KR') });
   localStorage.setItem(reportStorageKey(), JSON.stringify(reports.slice(0, 30)));
   reportForm.reset(); updateCustomReportField(); reportStatus.textContent = '신고가 이 기기에 저장됐어요. 다음 데이터 업데이트에 참고할 수 있습니다.';
 });
