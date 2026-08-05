@@ -47,6 +47,14 @@ function clearFacilities() {
   facilityMarkers = []; activeFacilityInfo = null;
 }
 
+function reportMissingShade(point) {
+  const location = `지도에서 선택한 예상 그늘 (${point.lat.toFixed(5)}, ${point.lng.toFixed(5)})`;
+  switchPage('report');
+  document.querySelector('#report-location').value = location;
+  document.querySelector('#report-type').value = '그늘로 표시됐지만 햇빛이 강함';
+  document.querySelector('#report-detail').focus();
+}
+
 function paintShadows() {
   clearShadows();
   if (!route.length) return 0;
@@ -57,8 +65,9 @@ function paintShadows() {
     if (!nearRoute(center)) return;
     const length = Math.min(170, building.height / Math.tan(sun.altitude));
     const shifted = building.points.map((p) => move(p, -length * Math.sin(sun.azimuth), -length * Math.cos(sun.azimuth)));
-    const shape = new kakao.maps.Polygon({ path: building.points.concat(shifted.reverse()).map(toLatLng), strokeWeight: 1, strokeColor: '#174d72', strokeOpacity: .75, fillColor: '#174d72', fillOpacity: .52, zIndex: 4 });
+    const shape = new kakao.maps.Polygon({ path: building.points.concat(shifted.reverse()).map(toLatLng), strokeWeight: 1, strokeColor: '#174d72', strokeOpacity: .75, fillColor: '#174d72', fillOpacity: .52, zIndex: 4, clickable: true });
     shape.setMap(map); shadows.push(shape); shown++;
+    kakao.maps.event.addListener(shape, 'click', () => reportMissingShade(center));
   });
   document.querySelector('#shade-badge').textContent = shown ? `그늘 ${shown}` : '그늘 분석';
   return shown;
