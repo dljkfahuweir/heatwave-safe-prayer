@@ -15,8 +15,6 @@ const reportForm = document.querySelector('#shade-report-form');
 const reportStatus = document.querySelector('#report-status');
 const reportType = document.querySelector('#report-type');
 const customReportField = document.querySelector('#custom-report-field');
-const loginButton = document.querySelector('#language-button');
-let activeUser = localStorage.getItem('sunSafeUser') || '';
 let start, destination, startMarker, destinationMarker, routeLine, startLabel = '', destinationLabel = '';
 let route = [], buildings = [], shadows = [], facilityMarkers = [], candidates = [], selectedCandidate = 0, activeFacilityInfo = null;
 
@@ -176,8 +174,8 @@ async function getWalkingRoute() {
   } catch { note.textContent = '보행 경로를 찾지 못했어요. 장소를 다시 선택해 주세요.'; }
 }
 
-const storageKey = () => `sunSafeSavedRoutes:${activeUser || 'guest'}`;
-const reportStorageKey = () => `sunSafeShadeReports:${activeUser || 'guest'}`;
+const storageKey = () => 'sunSafeSavedRoutes';
+const reportStorageKey = () => 'sunSafeShadeReports';
 const savedRoutes = () => JSON.parse(localStorage.getItem(storageKey()) || '[]');
 const setSavedRoutes = (items) => localStorage.setItem(storageKey(), JSON.stringify(items));
 const saveRouteButton = Object.assign(document.createElement('button'), { id: 'save-route', type: 'button', textContent: '★ 이 경로 저장' });
@@ -227,20 +225,6 @@ document.querySelector('#start-form').addEventListener('submit', (event) => { ev
 document.querySelector('#search-form').addEventListener('submit', (event) => { event.preventDefault(); search(document.querySelector('#destination').value.trim(), 'destination'); });
 document.querySelector('#location-button').style.display = 'none';
 document.querySelector('#time-button').onclick = () => { updateSunStatus(); paintShadows(); };
-const loginModal = document.createElement('div');
-loginModal.className = 'login-modal';
-loginModal.innerHTML = '<div class="login-card"><button type="button" class="close-login" aria-label="닫기">×</button><p class="page-eyebrow">MY SHADE WALK</p><h2>간편 로그인</h2><p>닉네임으로 이 기기의 저장 경로와 신고 내용을 구분해요.</p><input id="login-name" maxlength="20" placeholder="닉네임을 입력하세요" /><button id="login-submit" type="button">시작하기</button><button id="logout-button" type="button" class="logout-button">로그아웃</button></div>';
-document.body.append(loginModal);
-const updateLoginButton = () => { loginButton.textContent = activeUser ? `${activeUser}님` : '로그인'; };
-const closeLogin = () => loginModal.classList.remove('open');
-loginButton.onclick = () => { document.querySelector('#login-name').value = activeUser; loginModal.classList.add('open'); };
-loginModal.querySelector('.close-login').onclick = closeLogin;
-loginModal.querySelector('#login-submit').onclick = () => {
-  const name = document.querySelector('#login-name').value.trim();
-  if (!name) return;
-  activeUser = name; localStorage.setItem('sunSafeUser', activeUser); updateLoginButton(); renderSavedRoutes(); closeLogin();
-};
-loginModal.querySelector('#logout-button').onclick = () => { activeUser = ''; localStorage.removeItem('sunSafeUser'); updateLoginButton(); renderSavedRoutes(); closeLogin(); };
 saveRouteButton.onclick = saveCurrentRoute;
 document.querySelectorAll('.page-nav button').forEach((button) => button.addEventListener('click', () => switchPage(button.dataset.page)));
 function updateCustomReportField() {
@@ -274,5 +258,5 @@ sheetHandle.addEventListener('click', () => {
   controlSheet.classList.toggle('is-stowed');
 });
 map.addControl(new kakao.maps.ZoomControl(), kakao.maps.ControlPosition.RIGHT);
-updateLoginButton(); updateCustomReportField(); switchPage('home'); updateSaveRouteButton();
+updateCustomReportField(); switchPage('home'); updateSaveRouteButton();
 updateSunStatus(); setInterval(updateSunStatus, 60000); setInterval(() => { updateSunStatus(); paintShadows(); }, 600000);
