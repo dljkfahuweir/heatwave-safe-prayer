@@ -5,6 +5,8 @@ const places = new kakao.maps.services.Places();
 const note = document.querySelector('#map-notice');
 const resultBox = document.querySelector('#search-results');
 const candidateBox = document.querySelector('#route-candidates');
+const controlSheet = document.querySelector('.control-sheet');
+const sheetHandle = document.querySelector('.sheet-handle');
 let start, destination, startMarker, destinationMarker, routeLine;
 let route = [], buildings = [], shadows = [], facilityMarkers = [], candidates = [], selectedCandidate = 0, activeFacilityInfo = null;
 
@@ -164,5 +166,19 @@ document.querySelector('#start-form').addEventListener('submit', (event) => { ev
 document.querySelector('#search-form').addEventListener('submit', (event) => { event.preventDefault(); search(document.querySelector('#destination').value.trim(), 'destination'); });
 document.querySelector('#location-button').style.display = 'none';
 document.querySelector('#time-button').onclick = () => { updateSunStatus(); paintShadows(); };
+let sheetDragStart = null;
+sheetHandle.addEventListener('pointerdown', (event) => {
+  sheetDragStart = event.clientY;
+  sheetHandle.setPointerCapture(event.pointerId);
+});
+sheetHandle.addEventListener('pointerup', (event) => {
+  if (sheetDragStart === null) return;
+  const distance = event.clientY - sheetDragStart;
+  if (Math.abs(distance) < 8) controlSheet.classList.toggle('is-stowed');
+  else if (distance > 36) controlSheet.classList.add('is-stowed');
+  else if (distance < -36) controlSheet.classList.remove('is-stowed');
+  sheetDragStart = null;
+});
+sheetHandle.addEventListener('pointercancel', () => { sheetDragStart = null; });
 map.addControl(new kakao.maps.ZoomControl(), kakao.maps.ControlPosition.RIGHT);
 updateSunStatus(); setInterval(updateSunStatus, 60000); setInterval(() => { updateSunStatus(); paintShadows(); }, 600000);

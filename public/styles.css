@@ -2,3 +2,5 @@
 .route-candidates{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-top:10px}.route-option{border:1px solid #dbe6e8;border-radius:10px;background:#fff;padding:8px 6px;text-align:left;color:var(--ink);cursor:pointer}.route-option.selected{border-color:#1676d2;background:#edf6ff;box-shadow:0 0 0 1px #1676d2}.route-option strong,.route-option span,.route-option small{display:block}.route-option strong{font-size:.69rem}.route-option span{margin-top:3px;color:#1676d2;font-size:.61rem;font-weight:700}.route-option small{margin-top:3px;color:#74848b;font-size:.56rem;line-height:1.25}
 
 .legend-cooling{width:14px!important;height:14px!important;display:grid!important;place-items:center;color:#fff;background:#e74747;font-size:9px;font-style:normal;line-height:1}
+
+.control-sheet{transition:transform .24s ease}.control-sheet.is-stowed{transform:translateY(calc(100% - 27px))}.sheet-handle{cursor:grab;touch-action:none}.sheet-handle:active{cursor:grabbing}
