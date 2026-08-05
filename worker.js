@@ -22,7 +22,16 @@ export default {
     const start = url.searchParams.get('start');
     const end = url.searchParams.get('end');
     if (!start || !end || !/^-?\d+(\.\d+)?,-?\d+(\.\d+)?$/.test(start) || !/^-?\d+(\.\d+)?,-?\d+(\.\d+)?$/.test(end)) return new Response('Invalid coordinates', { status: 400, headers: cors(origin) });
-    const upstream = await fetch(`https://api.openrouteservice.org/v2/directions/foot-walking?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}`, { headers: { Authorization: env.ORS_API_KEY, Accept: 'application/geo+json' } });
+    const [startLng, startLat] = start.split(',').map(Number);
+    const [endLng, endLat] = end.split(',').map(Number);
+    const upstream = await fetch('https://api.openrouteservice.org/v2/directions/foot-walking/geojson', {
+      method: 'POST',
+      headers: { Authorization: env.ORS_API_KEY, Accept: 'application/geo+json', 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        coordinates: [[startLng, startLat], [endLng, endLat]],
+        alternative_routes: { target_count: 3, weight_factor: 1.4, share_factor: 0.6 },
+      }),
+    });
     return new Response(upstream.body, { status: upstream.status, headers: { ...cors(origin), 'Content-Type': upstream.headers.get('Content-Type') || 'application/json', 'Cache-Control': 'public, max-age=600' } });
   },
 };
