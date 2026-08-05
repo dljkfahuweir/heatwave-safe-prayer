@@ -89,13 +89,11 @@ async function loadBuildings() {
   if (!route.length) return;
   note.textContent = '경로 주변 건물 높이와 그늘을 분석하고 있어요.';
   const samples = route.filter((_, i) => i % Math.max(1, Math.ceil(route.length / 8)) === 0);
-  const query = `[out:json][timeout:10];(${samples.map((p) => `way[building](around:50,${p.lat},${p.lng});`).join('')});out tags geom;`;
   try {
-    const endpoints = ['https://overpass-api.de/api/interpreter', 'https://overpass.kumi.systems/api/interpreter', 'https://overpass.private.coffee/api/interpreter'];
-    const data = await Promise.any(endpoints.map(async (endpoint) => {
-      const controller = new AbortController(); const timeout = setTimeout(() => controller.abort(), 15000);
-      try { const response = await fetch(`${endpoint}?data=${encodeURIComponent(query)}`, { signal: controller.signal }); if (!response.ok) throw new Error(); return response.json(); } finally { clearTimeout(timeout); }
-    }));
+    const points = samples.map((p) => `${p.lng},${p.lat}`).join(';');
+    const response = await fetch(`${ROUTE_API}/buildings?points=${encodeURIComponent(points)}`);
+    if (!response.ok) throw new Error('building data unavailable');
+    const data = await response.json();
     buildings = data.elements.filter((item) => item.geometry?.length > 2).slice(0, 160).map((item) => ({ height: Number.parseFloat(item.tags?.height) || Number.parseFloat(item.tags?.['building:levels']) * 3.2 || 11, points: item.geometry.map((p) => ({ lat: p.lat, lng: p.lon })) }));
     const shown = paintShadows();
     note.textContent = shown ? `경로 주변 건물 ${shown}곳의 예상 그림자를 표시했어요.` : '경로 주변에 분석 가능한 건물 그림자가 적어요.';
