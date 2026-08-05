@@ -283,22 +283,36 @@ reportForm.addEventListener('submit', (event) => {
   localStorage.setItem(reportStorageKey(), JSON.stringify(reports.slice(0, 30)));
   reportForm.reset(); updateCustomReportField(); reportStatus.textContent = '신고가 이 기기에 저장됐어요. 다음 데이터 업데이트에 참고할 수 있습니다.';
 });
-let sheetDragStart = null, ignoreSheetClick = false;
+let sheetDragStart = null, sheetStartOffset = 0, sheetOffset = 0, sheetMoved = false;
+const sheetMaxOffset = () => Math.max(0, controlSheet.offsetHeight - 27);
+function setSheetOffset(offset, animate = false) {
+  sheetOffset = Math.max(0, Math.min(sheetMaxOffset(), offset));
+  controlSheet.style.transition = animate ? 'transform .2s ease' : 'none';
+  controlSheet.style.setProperty('--sheet-offset', `${sheetOffset}px`);
+  controlSheet.classList.toggle('is-stowed', sheetOffset > 0);
+}
 sheetHandle.addEventListener('pointerdown', (event) => {
   sheetDragStart = event.clientY;
+  sheetStartOffset = sheetOffset;
+  sheetMoved = false;
+  controlSheet.style.transition = 'none';
   sheetHandle.setPointerCapture(event.pointerId);
+});
+sheetHandle.addEventListener('pointermove', (event) => {
+  if (sheetDragStart === null) return;
+  const distance = event.clientY - sheetDragStart;
+  if (Math.abs(distance) > 3) sheetMoved = true;
+  setSheetOffset(sheetStartOffset + distance);
 });
 sheetHandle.addEventListener('pointerup', (event) => {
   if (sheetDragStart === null) return;
-  const distance = event.clientY - sheetDragStart;
-  if (distance > 36) { controlSheet.classList.add('is-stowed'); ignoreSheetClick = true; }
-  else if (distance < -36) { controlSheet.classList.remove('is-stowed'); ignoreSheetClick = true; }
   sheetDragStart = null;
+  controlSheet.style.transition = 'transform .2s ease';
 });
 sheetHandle.addEventListener('pointercancel', () => { sheetDragStart = null; });
 sheetHandle.addEventListener('click', () => {
-  if (ignoreSheetClick) { ignoreSheetClick = false; return; }
-  controlSheet.classList.toggle('is-stowed');
+  if (sheetMoved) return;
+  setSheetOffset(sheetOffset > 0 ? 0 : sheetMaxOffset(), true);
 });
 map.addControl(new kakao.maps.ZoomControl(), kakao.maps.ControlPosition.RIGHT);
 updateCustomReportField(); switchPage('home'); updateSaveRouteButton();
